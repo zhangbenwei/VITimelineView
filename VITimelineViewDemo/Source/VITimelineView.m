@@ -8,7 +8,7 @@
 
 #import "VITimelineView.h"
 #import "UIView+ConstraintHolder.h"
-
+#import "VIRangeContentAssetImageDataSource.h"
 @interface VITimelineView() <VIRangeViewDelegate>
 
 @property (nonatomic, strong) UIScrollView *scrollView;
@@ -75,7 +75,14 @@
     scrollContentView.translatesAutoresizingMaskIntoConstraints = NO;
     [scrollView addSubview:scrollContentView];
     self.scrollContentView = scrollContentView;
-    
+
+
+    scrollView.userInteractionEnabled = YES;
+    UIPinchGestureRecognizer * pinch = [[UIPinchGestureRecognizer alloc] initWithTarget:self action:@selector(pinchAct:)];
+    [scrollView addGestureRecognizer:pinch];
+    UILongPressGestureRecognizer * longPress = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(longPressAct:)];
+    [scrollView addGestureRecognizer:longPress];
+
     UIView *scrollRangeContentView = [UIView new];
     scrollRangeContentView.translatesAutoresizingMaskIntoConstraints = NO;
     [scrollContentView addSubview:scrollRangeContentView];
@@ -103,7 +110,7 @@
     [scrollRangeContentView.leftAnchor constraintEqualToAnchor:scrollContentView.leftAnchor].active = YES;
     [scrollRangeContentView.rightAnchor constraintEqualToAnchor:scrollContentView.rightAnchor].active = YES;
     [scrollRangeContentView.centerYAnchor constraintEqualToAnchor:scrollContentView.centerYAnchor].active = YES;
-    [scrollRangeContentView.heightAnchor constraintEqualToConstant:45].active = YES;
+    [scrollRangeContentView.heightAnchor constraintEqualToConstant:50].active = YES;
     
     [contentBackgroundView.leftAnchor constraintEqualToAnchor:self.leftAnchor].active = YES;
     [contentBackgroundView.rightAnchor constraintEqualToAnchor:self.rightAnchor].active = YES;
@@ -174,6 +181,45 @@
     }
 }
 
+- (void)pinchAct:(UIPinchGestureRecognizer *)gesture {
+    if (gesture.state == UIGestureRecognizerStateBegan) {}
+    else if (gesture.state == UIGestureRecognizerStateChanged) {
+
+        [self.rangeViews enumerateObjectsUsingBlock:^(VIRangeView * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+
+            obj.widthPerSecond = obj.widthPerSecond * gesture.scale;
+            
+            VIRangeContentAssetImageDataSource * dataSource = obj.contentView.dataSource;
+            dataSource.widthPerSecond = obj.widthPerSecond;
+            [obj.contentView reloadData];
+        }];
+         
+        gesture.scale = 1;
+    } else if (gesture.state == UIGestureRecognizerStateEnded){
+        gesture.scale = 1;
+
+    }
+}
+- (void)longPressAct:(UILongPressGestureRecognizer *)gesture {
+    if (gesture.state == UIGestureRecognizerStateBegan) {
+        [self.rangeViews enumerateObjectsUsingBlock:^(VIRangeView * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+            obj.widthPerSecond =50.0f/CMTimeGetSeconds(CMTimeSubtract(obj.endTime, obj.startTime));
+            [obj.contentView reloadData];
+        }];
+    }
+    else if (gesture.state == UIGestureRecognizerStateChanged) {
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+//            [self exChangeSelectRangeViewIndex:0 needMoveRangeViewIndex:1];
+        });
+
+    } else if (gesture.state == UIGestureRecognizerStateEnded){
+        [self.rangeViews enumerateObjectsUsingBlock:^(VIRangeView * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+            obj.widthPerSecond = 50;
+            [obj.contentView reloadData];
+        }];
+    }
+
+}
 #pragma mark - Public
 
 - (void)reloadWithRangeViews:(NSArray<VIRangeView *> *)rangeViews {
@@ -200,24 +246,23 @@
           ];
         [NSLayoutConstraint activateConstraints:view.vi_constraints];
     } else {
-        void(^updateLeft)(VIRangeView *rangeView) = ^(VIRangeView *rangeView) {
-            [rangeView updateRightConstraint:^NSLayoutConstraint * _Nonnull{
-                CGFloat offset = rangeView.contentInset.right + view.contentInset.left - (self.rangeViewLeftInset + self.rangeViewRightInset);
-                NSLayoutConstraint *rightConstraint = [rangeView.rightAnchor constraintEqualToAnchor:view.leftAnchor constant:offset];
-                return rightConstraint;
-            }];
-        };
+
         
         void(^updateRight)(VIRangeView *rangeView) = ^(VIRangeView *rangeView) {
-            [rangeView updateRightConstraint:^NSLayoutConstraint * _Nonnull{
+            [rangeView updateLeftConstraint:^NSLayoutConstraint * _Nonnull{
                 return nil;
             }];
         };
         
         if (index >= self.rangeViews.count) {
             VIRangeView *leftRangeView = self.rangeViews.lastObject;
-            updateLeft(leftRangeView);
-            
+            CGFloat offset = leftRangeView.contentInset.right + view.contentInset.left - (self.rangeViewLeftInset + self.rangeViewRightInset);
+            __weak typeof(leftRangeView) weakLeftRView = leftRangeView;
+            __weak typeof(view) weakView = view;
+            [leftRangeView updateRightConstraint:^NSLayoutConstraint * _Nonnull{
+                NSLayoutConstraint *rightConstraint = [weakLeftRView.rightAnchor constraintEqualToAnchor:weakView.leftAnchor constant:offset];
+                return rightConstraint;
+            }];
             view.vi_constraints =
             @[[view.rightAnchor constraintEqualToAnchor:self.scrollRangeContentView.rightAnchor],
               [view.topAnchor constraintEqualToAnchor:self.scrollRangeContentView.topAnchor],
@@ -237,13 +282,21 @@
               ];
             [NSLayoutConstraint activateConstraints:view.vi_constraints];
         } else {
+
             VIRangeView *leftRangeView = self.rangeViews[index - 1];
             VIRangeView *rightRangeView = self.rangeViews[index];
-            
-            updateLeft(leftRangeView);
-            
-            updateRight(rightRangeView);
-            
+
+            CGFloat offsetl = leftRangeView.contentInset.right + view.contentInset.left - (self.rangeViewLeftInset + self.rangeViewRightInset);
+            __weak typeof(leftRangeView) weakLeftRView = leftRangeView;
+            __weak typeof(view) weakView = view;
+            [leftRangeView updateRightConstraint:^NSLayoutConstraint * _Nonnull{
+                NSLayoutConstraint *rightConstraint = [weakLeftRView.rightAnchor constraintEqualToAnchor:weakView.leftAnchor constant:offsetl];
+                return rightConstraint;
+            }];
+            [rightRangeView updateLeftConstraint:^NSLayoutConstraint * _Nonnull{
+                return nil;
+            }];
+
             
             CGFloat offset = (rightRangeView.contentInset.left + view.contentInset.right) - (self.rangeViewLeftInset + self.rangeViewRightInset);
             view.vi_constraints =
@@ -269,6 +322,7 @@
         [self removeRangeViewAtIndex:index animated:YES completion:completion];
     }
 }
+
 
 - (void)removeRangeViewAtIndex:(NSInteger)index animated:(BOOL)animated completion:(void(^)(void))completion {
     if (index < 0 || index >= self.rangeViews.count) {
@@ -340,6 +394,7 @@
     }
     
 }
+
 
 - (CGFloat)timelineWidthPerSeconds {
     return self.contentWidthPerSecond;

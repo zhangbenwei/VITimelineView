@@ -46,6 +46,9 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)scrollToEndOfRangeView:(VIRangeView *)rangeView animated:(BOOL)animated completion:(nullable void(^)(void))completion;
 - (void)scrollToContentOffset:(CGPoint)contentOffset animated:(BOOL)animated completion:(void(^)(void))completion;
 
+
+ 
+
 - (CGFloat)calculateOffsetXAtTime:(CMTime)time;
 - (NSInteger)getRangeViewIndexAtTime:(CMTime)time;
 - (CMTime)calculateTimeAtOffsetX:(CGFloat)offsetX;

@@ -43,6 +43,7 @@
     
     [imageView.centerXAnchor constraintEqualToAnchor:self.centerXAnchor].active = YES;
     [imageView.centerYAnchor constraintEqualToAnchor:self.centerYAnchor].active = YES;
+
 }
 
 - (BOOL)pointInside:(CGPoint)point withEvent:(UIEvent *)event {

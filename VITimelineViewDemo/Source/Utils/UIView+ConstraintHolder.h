@@ -16,6 +16,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)setVi_constraints:(NSArray *)constraints;
 - (NSArray *)vi_constraints;
 
+- (NSLayoutConstraint *)getConstraint:(NSLayoutAttribute)attibute;
+
 - (void)updateConstraintWithAttribute:(NSLayoutAttribute)attribute maker:(NSLayoutConstraint *(^)(void))maker;
 - (void)updateLeftConstraint:(NSLayoutConstraint *(^)(void))maker;
 - (void)updateRightConstraint:(NSLayoutConstraint *(^)(void))maker;
@@ -32,6 +34,16 @@ static const char VIConstaintsKey = 'c';
 - (NSArray<NSLayoutConstraint *> *)vi_constraints {
     return objc_getAssociatedObject(self, &VIConstaintsKey);
 }
+- (NSLayoutConstraint *)getConstraint:(NSLayoutAttribute)attibute {
+    NSLayoutConstraint *constraint;
+    for (NSLayoutConstraint *c in self.vi_constraints) {
+        if (c.firstItem == self && c.firstAttribute == attibute) {
+            constraint = c;
+            break;
+        }
+    }
+    return constraint;
+}
 
 - (void)updateConstraintWithAttribute:(NSLayoutAttribute)attribute maker:(NSLayoutConstraint *(^)(void))maker {
     NSLayoutConstraint *constraint;
@@ -41,20 +53,22 @@ static const char VIConstaintsKey = 'c';
             break;
         }
     }
-    [NSLayoutConstraint deactivateConstraints:@[constraint]];
-    
+    if (constraint) {
+        [NSLayoutConstraint deactivateConstraints:@[constraint]];
+    }
     NSMutableArray *mutableConstraints = [self.vi_constraints mutableCopy];
     [mutableConstraints removeObject:constraint];
-    
     if (maker) {
         NSLayoutConstraint *newConstraint = maker();
         if (newConstraint.firstItem == self && newConstraint.firstAttribute == attribute) {
-            [mutableConstraints addObject:constraint];
+            [mutableConstraints addObject:newConstraint];
             [NSLayoutConstraint activateConstraints:@[newConstraint]];
         }
     }
     self.vi_constraints = mutableConstraints;
 }
+
+
 
 - (void)updateLeftConstraint:(NSLayoutConstraint *(^)(void))maker {
     [self updateConstraintWithAttribute:NSLayoutAttributeLeft maker:maker];

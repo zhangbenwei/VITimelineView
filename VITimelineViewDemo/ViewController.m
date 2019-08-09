@@ -9,10 +9,13 @@
 #import "ViewController.h"
 #import <AVFoundation/AVFoundation.h>
 #import "VITimelineView+Creator.h"
+#import "VIRangeView+Creator.h"
 
 @interface ViewController () <VIRangeViewDelegate, VITimelineViewDelegate>
 
-
+{
+    VITimelineView *timelineView;
+}
 @end
 
 @implementation ViewController
@@ -26,10 +29,10 @@
     NSURL *url2 = [[NSBundle mainBundle] URLForResource:@"water" withExtension:@"mp4"];
     AVAsset *asset2 = [AVAsset assetWithURL:url2];
     
-    CGFloat widthPerSecond = 40;
-    CGSize imageSize = CGSizeMake(30, 45);
+    CGFloat widthPerSecond = 50;
+    CGSize imageSize = CGSizeMake(50, 50);
     
-    VITimelineView *timelineView =
+    timelineView =
     [VITimelineView timelineViewWithAssets:@[asset1, asset2]
                                  imageSize:imageSize
                             widthPerSecond:widthPerSecond];
@@ -55,6 +58,22 @@
         obj.backgroundView.backgroundColor = [UIColor colorWithRed:0.72 green:0.73 blue:0.77 alpha:1.00];
     }];
 }
+- (IBAction)addins:(id)sender {
+     NSURL *url2 = [[NSBundle mainBundle] URLForResource:@"water" withExtension:@"mp4"];
+    CGSize imageSize = CGSizeMake(30, 45);
+    AVAsset * asset = [AVAsset assetWithURL:url2];
+    VIRangeView * rangeView = [VIRangeView imageRangeViewWithAsset:asset imageSize:imageSize];
+    [timelineView insertRangeView:rangeView atIndex:2];
+    [timelineView.rangeViews enumerateObjectsUsingBlock:^(VIRangeView * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+        obj.clipsToBounds = YES;
+        obj.layer.cornerRadius = 4;
+        obj.leftEarView.backgroundColor = [UIColor colorWithRed:0.72 green:0.73 blue:0.77 alpha:1.00];
+        obj.rightEarView.backgroundColor = [UIColor colorWithRed:0.72 green:0.73 blue:0.77 alpha:1.00];
+        obj.backgroundView.backgroundColor = [UIColor colorWithRed:0.72 green:0.73 blue:0.77 alpha:1.00];
+    }];
+}
+
+
 
 - (UIStatusBarStyle)preferredStatusBarStyle {
     return UIStatusBarStyleLightContent;

@@ -61,7 +61,7 @@
 }
 
 - (void)commonInit {
-    _contentHeight = 45;
+    _contentHeight = 50;
     _widthPerSecond = 50;
     _startTime = kCMTimeZero;
     _endTime = kCMTimeZero;
@@ -201,7 +201,6 @@
 
 - (void)setContentInset:(UIEdgeInsets)contentInset {
     _contentInset = contentInset;
-    
     [NSLayoutConstraint deactivateConstraints:self.contentContainerView.vi_constraints];
     self.contentContainerView.vi_constraints =
     @[[self.contentContainerView.leftAnchor constraintEqualToAnchor:self.leftEarView.rightAnchor],
